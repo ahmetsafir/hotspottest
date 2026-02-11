@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PMS Gateway - İstemci Paneli</title>
+  <style>
+    :root { --bg: #0f1419; --card: #1a2332; --border: #2d3a4d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --ok: #3fb950; --err: #f85149; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 1rem; }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+    .card h2 { font-size: 1rem; margin: 0 0 0.75rem 0; color: var(--muted); }
+    label { display: block; margin-bottom: 0.25rem; font-size: 0.875rem; color: var(--muted); }
+    input, select, button { padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.875rem; }
+    input { width: 100%; max-width: 320px; }
+    select { min-width: 160px; }
+    button { cursor: pointer; background: var(--accent); color: #fff; border: none; margin-right: 0.5rem; margin-top: 0.5rem; }
+    button.secondary { background: var(--border); }
+    .row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; margin-bottom: 0.75rem; }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+    .tabs a { padding: 0.5rem 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); text-decoration: none; }
+    .tabs a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+    .badge.ok { background: var(--ok); color: #000; }
+    .badge.err { background: var(--err); color: #fff; }
+    .badge.warn { background: #d29922; color: #000; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid var(--border); }
+    .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .dashboard-cards .card { margin: 0; padding: 0.75rem; }
+    .dashboard-cards .card .val { font-size: 1.25rem; font-weight: 600; }
+    #testResult { margin-top: 0.75rem; white-space: pre-wrap; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <h1>PMS Gateway – İstemci Paneli</h1>
+  <div class="tabs">
+    <a href="#" class="tab-link active" data-tab="settings">PMS Ayarları</a>
+    <a href="#" class="tab-link" data-tab="dashboard">PMS Dashboard</a>
+  </div>
+
+  <div id="settings" class="tab active">
+    <div class="card">
+      <h2>Kiracı & Provider</h2>
+      <div class="row">
+        <div>
+          <label>Tenant ID</label>
+          <input type="text" id="tenantId" placeholder="tenant-1" value="tenant-1" />
+        </div>
+        <div>
+          <label>PMS Provider</label>
+          <select id="pms_provider">
+            <option value="none">Yok</option>
+            <option value="api">API (REST)</option>
+            <option value="mysql">MySQL</option>
+            <option value="mssql">MSSQL</option>
+            <option value="postgres">PostgreSQL</option>
+          </select>
+        </div>
+        <div>
+          <label>Fail Mode</label>
+          <select id="pms_fail_mode">
+            <option value="deny">deny</option>
+            <option value="bypass">bypass</option>
+          </select>
+        </div>
+        <div>
+          <label>Unknown Mode</label>
+          <select id="pms_unknown_mode">
+            <option value="deny">deny</option>
+            <option value="short_session">short_session</option>
+          </select>
+        </div>
+        <div>
+          <label>Session timeout (dk)</label>
+          <input type="number" id="pms_session_timeout_minutes" value="60" min="1" max="1440" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="sqlMapping">
+      <h2>SQL eşleme (MySQL / MSSQL / PostgreSQL)</h2>
+      <div class="row">
+        <div><label>DB Host</label><input type="text" id="pms_db_host" placeholder="localhost" /></div>
+        <div><label>Port</label><input type="number" id="pms_db_port" placeholder="3306" /></div>
+        <div><label>User</label><input type="text" id="pms_db_user" /></div>
+        <div><label>Password</label><input type="password" id="pms_db_password" /></div>
+        <div><label>Database</label><input type="text" id="pms_db_database" /></div>
+      </div>
+      <div class="row">
+        <div><label>Tablo</label><input type="text" id="pms_sql_table" placeholder="reservations" /></div>
+        <div><label>Oda sütunu</label><input type="text" id="pms_sql_room_column" placeholder="room_number" /></div>
+        <div><label>İsim sütunu</label><input type="text" id="pms_sql_name_column" /></div>
+        <div><label>TC sütunu</label><input type="text" id="pms_sql_tc_column" /></div>
+        <div><label>Pasaport sütunu</label><input type="text" id="pms_sql_passport_column" /></div>
+      </div>
+      <div class="row">
+        <div><label>Check-in sütunu</label><input type="text" id="pms_sql_checkin_column" /></div>
+        <div><label>Check-out sütunu</label><input type="text" id="pms_sql_checkout_column" /></div>
+        <div><label>Status sütunu</label><input type="text" id="pms_sql_status_column" /></div>
+        <div><label>In-house değeri</label><input type="text" id="pms_sql_inhouse_value" placeholder="in_house" /></div>
+        <div><label>External ref sütunu</label><input type="text" id="pms_sql_external_ref_column" /></div>
+      </div>
+    </div>
+
+    <div class="card" id="apiMapping">
+      <h2>API (REST)</h2>
+      <div class="row">
+        <div><label>API URL</label><input type="url" id="pms_api_url" placeholder="https://pms.example.com/api" /></div>
+        <div><label>API Key</label><input type="text" id="pms_api_key" placeholder="opsiyonel" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Kaydet & Test</h2>
+      <button id="btnSave">Ayarları kaydet</button>
+      <button id="btnTest" class="secondary">Bağlantıyı test et</button>
+      <pre id="testResult"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Doğrulama testi</h2>
+      <div class="row">
+        <div><label>Oda no</label><input type="text" id="testRoom" placeholder="101" /></div>
+        <div><label>Identity hash</label><input type="text" id="testIdentityHash" placeholder="hash123" /></div>
+      </div>
+      <button id="btnVerify">Test verify</button>
+      <pre id="verifyResult"></pre>
+    </div>
+  </div>
+
+  <div id="dashboard" class="tab">
+    <div class="card">
+      <h2>Üst kartlar</h2>
+      <div class="dashboard-cards" id="dashboardCards"></div>
+    </div>
+    <div class="card">
+      <h2>Son 50 doğrulama</h2>
+      <table>
+        <thead><tr><th>Oda</th><th>Status</th><th>Provider</th><th>Cache</th><th>Latency</th><th>Tarih</th></tr></thead>
+        <tbody id="verificationTable"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Checkout job</h2>
+      <p id="jobStatus"></p>
+    </div>
+  </div>
+
+  <script>
+    const API = (window.location.origin || 'http://localhost:3000') + '/api/pms';
+
+    document.querySelectorAll('.tab-link').forEach((a) => {
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+        document.querySelectorAll('.tab-link').forEach((l) => l.classList.remove('active'));
+        document.getElementById(a.dataset.tab).classList.add('active');
+        a.classList.add('active');
+        if (a.dataset.tab === 'dashboard') loadDashboard();
+      });
+    });
+
+    function tenantId() { return document.getElementById('tenantId').value || 'tenant-1'; }
+
+    function gatherSettings() {
+      const o = { tenant_id: tenantId() };
+      ['pms_provider','pms_fail_mode','pms_unknown_mode','pms_session_timeout_minutes',
+       'pms_db_host','pms_db_port','pms_db_user','pms_db_password','pms_db_database',
+       'pms_sql_table','pms_sql_room_column','pms_sql_name_column','pms_sql_tc_column','pms_sql_passport_column',
+       'pms_sql_checkin_column','pms_sql_checkout_column','pms_sql_status_column','pms_sql_inhouse_value','pms_sql_external_ref_column',
+       'pms_api_url','pms_api_key'].forEach((k) => {
+        const el = document.getElementById(k);
+        if (el && el.value) o[k] = el.type === 'number' ? parseInt(el.value, 10) : el.value;
+      });
+      return o;
+    }
+
+    document.getElementById('btnSave').addEventListener('click', async () => {
+      const res = await fetch(API + '/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(gatherSettings()) });
+      const data = await res.json();
+      document.getElementById('testResult').textContent = JSON.stringify(data, null, 2);
+    });
+
+    document.getElementById('btnTest').addEventListener('click', async () => {
+      await document.getElementById('btnSave').click();
+      const res = await fetch(API + '/test-connection', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tenant_id: tenantId() }) });
+      const data = await res.json();
+      document.getElementById('testResult').textContent = JSON.stringify(data, null, 2);
+    });
+
+    document.getElementById('btnVerify').addEventListener('click', async () => {
+      const body = { tenant_id: tenantId(), room_number: document.getElementById('testRoom').value, identity_hash: document.getElementById('testIdentityHash').value };
+      const res = await fetch(API + '/test-verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await res.json();
+      document.getElementById('verifyResult').textContent = JSON.stringify(data, null, 2);
+    });
+
+    async function loadDashboard() {
+      const res = await fetch(API + '/dashboard?tenant_id=' + encodeURIComponent(tenantId()));
+      const data = await res.json();
+      const c = data.cards || {};
+      document.getElementById('dashboardCards').innerHTML = [
+        ['Provider', c.provider || '-'],
+        ['Online', c.online ? 'Evet' : 'Hayır'],
+        ['Circuit', c.circuitOpen ? 'Açık' : 'Kapalı'],
+        ['Fail Mode', c.failMode],
+        ['Unknown Mode', c.unknownMode],
+        ['Avg Latency', (c.avgLatency || 0) + ' ms'],
+        ['Cache Hit %', (c.cacheHitRate || 0) + '%'],
+        ['Doğrulama (24h)', c.verificationsLast24h || 0],
+      ].map(([label, val]) => `<div class="card"><div class="val">${val}</div><div>${label}</div></div>`).join('');
+      const rows = (data.verifications || []).map((v) => `<tr><td>${v.room_number}</td><td>${v.status}</td><td>${v.provider}</td><td>${v.cache}</td><td>${v.latency_ms} ms</td><td>${v.created_at}</td></tr>`).join('');
+      document.getElementById('verificationTable').innerHTML = rows || '<tr><td colspan="6">Kayıt yok</td></tr>';
+      const j = data.jobStatus || {};
+      document.getElementById('jobStatus').textContent = `Son çalışma: ${j.lastRunAt || '-'} | Kapatılan: ${j.lastRunCount || 0} | Hata: ${j.lastError || '-'}`;
+    }
+  </script>
+</body>
+</html>
