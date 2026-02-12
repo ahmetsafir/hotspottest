@@ -3,6 +3,7 @@ import app from './app';
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`PMS Gateway listening on port ${PORT}`);
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(Number(PORT), HOST, () => {
+  console.log(`PMS Gateway listening on ${HOST}:${PORT}`);
 });
