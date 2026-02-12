@@ -12,6 +12,12 @@ import { getRadiusAttributes } from '../services/radius';
 
 const router = Router();
 
+/** Atlas tenant_id sayı (18) veya string ("18") gönderebilir; hep string kullanıyoruz. */
+function normalizeTenantId(v: unknown): string {
+  if (v == null) return '';
+  return String(v).trim();
+}
+
 const testVerifyLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
@@ -24,7 +30,7 @@ const loginLimiter = rateLimit({
 });
 
 router.get('/health', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenant_id as string) || '';
+  const tenantId = normalizeTenantId(req.query.tenant_id);
   const settings = tenantId ? getTenantPmsSettings(tenantId) : null;
   res.json({
     ok: true,
@@ -38,13 +44,13 @@ router.get('/health', (req: Request, res: Response) => {
 });
 
 router.get('/metrics', (req: Request, res: Response) => {
-  const tenantId = req.query.tenant_id as string | undefined;
+  const tenantId = normalizeTenantId(req.query.tenant_id);
   const metrics = tenantId ? getMetrics(tenantId) : getMetricsAll();
   res.json(metrics);
 });
 
 router.get('/circuit-status', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenant_id as string) || '';
+  const tenantId = normalizeTenantId(req.query.tenant_id);
   if (!tenantId) return res.status(400).json({ error: 'tenant_id required' });
   const status = getCircuitStatus(tenantId);
   const remainingMs = getRemainingDisabledMs(tenantId);
@@ -52,9 +58,9 @@ router.get('/circuit-status', (req: Request, res: Response) => {
 });
 
 router.post('/test-verify', testVerifyLimiter, async (req: Request, res: Response) => {
-  const tenantId = (req.body?.tenant_id ?? req.query.tenant_id) as string;
-  const roomNumber = (req.body?.room_number ?? req.query.room_number) as string;
-  const identityHash = (req.body?.identity_hash ?? req.query.identity_hash) as string;
+  const tenantId = normalizeTenantId(req.body?.tenant_id ?? req.query.tenant_id);
+  const roomNumber = String(req.body?.room_number ?? req.query.room_number ?? '').trim();
+  const identityHash = String(req.body?.identity_hash ?? req.query.identity_hash ?? '').trim();
   if (!tenantId || !roomNumber || !identityHash) {
     return res.status(400).json({ ok: false, error: 'tenant_id, room_number, identity_hash required' });
   }
@@ -70,9 +76,9 @@ router.post('/test-verify', testVerifyLimiter, async (req: Request, res: Respons
 });
 
 router.post('/login', loginLimiter, async (req: Request, res: Response) => {
-  const tenantId = (req.body?.tenant_id ?? req.query.tenant_id) as string;
-  const roomNumber = (req.body?.room_number ?? req.query.room_number) as string;
-  const identityHash = (req.body?.identity_hash ?? req.query.identity_hash) as string;
+  const tenantId = normalizeTenantId(req.body?.tenant_id ?? req.query.tenant_id);
+  const roomNumber = String(req.body?.room_number ?? req.query.room_number ?? '').trim();
+  const identityHash = String(req.body?.identity_hash ?? req.query.identity_hash ?? '').trim();
   if (!tenantId || !roomNumber || !identityHash) {
     return res.status(400).json({ ok: false, error: 'tenant_id, room_number, identity_hash required' });
   }
@@ -92,7 +98,7 @@ router.post('/login', loginLimiter, async (req: Request, res: Response) => {
 });
 
 router.get('/dashboard', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenant_id as string) || '';
+  const tenantId = normalizeTenantId(req.query.tenant_id);
   if (!tenantId) return res.status(400).json({ error: 'tenant_id required' });
 
   const settings = getTenantPmsSettings(tenantId);
@@ -137,7 +143,7 @@ router.get('/job-status', (req: Request, res: Response) => {
 });
 
 router.post('/settings', (req: Request, res: Response) => {
-  const tenantId = (req.body?.tenant_id ?? req.query.tenant_id) as string;
+  const tenantId = normalizeTenantId(req.body?.tenant_id ?? req.query.tenant_id);
   if (!tenantId) return res.status(400).json({ error: 'tenant_id required' });
   const kv = req.body?.settings ?? req.body;
   setTenantPmsSettingsFromKv(tenantId, kv);
@@ -145,7 +151,7 @@ router.post('/settings', (req: Request, res: Response) => {
 });
 
 router.post('/test-connection', async (req: Request, res: Response) => {
-  const tenantId = (req.body?.tenant_id ?? req.query.tenant_id) as string;
+  const tenantId = normalizeTenantId(req.body?.tenant_id ?? req.query.tenant_id);
   if (!tenantId) return res.status(400).json({ error: 'tenant_id required' });
   const settings = getTenantPmsSettings(tenantId);
   if (!settings || settings.pms_provider === 'none') {

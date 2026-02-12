@@ -22,8 +22,19 @@ export class ApiPmsConnector implements IPmsConnector {
     input: GuestVerifyInput
   ): Promise<VerifyGuestResult> {
     const start = Date.now();
-    const baseUrl = (settings.pms_api_url || '').replace(/\/$/, '');
-    const url = `${baseUrl}/verify`; // veya /guest/verify - tenant'a göre özelleştirilebilir
+    const baseUrl = (settings.pms_api_url || '').trim().replace(/\/$/, '');
+    if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) {
+      return {
+        matched: false,
+        status: 'unknown',
+        room_number: input.roomNumber,
+        provider: 'api',
+        ok: false,
+        latency_ms: Date.now() - start,
+        cache: 'miss',
+      };
+    }
+    const url = `${baseUrl}/verify`;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), PMS_QUERY_TIMEOUT_MS);
@@ -78,8 +89,14 @@ export class ApiPmsConnector implements IPmsConnector {
   }
 
   async testConnection(settings: TenantPmsSettings): Promise<{ ok: boolean; message?: string }> {
-    const baseUrl = (settings.pms_api_url || '').replace(/\/$/, '');
-    const url = `${baseUrl}/health` || `${baseUrl}/ping`;
+    const baseUrl = (settings.pms_api_url || '').trim().replace(/\/$/, '');
+    if (!baseUrl) {
+      return { ok: false, message: 'API URL boş. Lütfen “API (REST)” bölümünde tam URL girin (örn. https://pms.oteliniz.com/api).' };
+    }
+    if (!/^https?:\/\//i.test(baseUrl)) {
+      return { ok: false, message: 'API URL http:// veya https:// ile başlamalı.' };
+    }
+    const url = `${baseUrl}/health`;
     try {
       const controller = new AbortController();
       setTimeout(() => controller.abort(), 5000);
@@ -88,9 +105,12 @@ export class ApiPmsConnector implements IPmsConnector {
         headers: settings.pms_api_key ? { 'X-API-Key': settings.pms_api_key } : {},
         signal: controller.signal,
       });
-      return { ok: res.ok };
+      return { ok: res.ok, message: res.ok ? undefined : `HTTP ${res.status}` };
     } catch (e) {
-      return { ok: false, message: e instanceof Error ? e.message : String(e) };
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('parse URL') || msg.includes('fetch'))
+        return { ok: false, message: 'Bağlantı kurulamadı. URL’yi kontrol edin (örn. https://alanadi.com/api).' };
+      return { ok: false, message: msg };
     }
   }
 }
