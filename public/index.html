@@ -33,10 +33,32 @@
     .dashboard-cards .card { margin: 0; padding: 0.75rem; }
     .dashboard-cards .card .val { font-size: 1.25rem; font-weight: 600; }
     #testResult { margin-top: 0.75rem; white-space: pre-wrap; font-size: 0.8rem; }
+    .test-banner { background: #1f2937; border: 1px solid #d29922; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .test-banner strong { color: #d29922; }
+    .help-text { font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; line-height: 1.4; }
+    .notes-box { background: #161b22; border-left: 4px solid var(--accent); padding: 0.75rem 1rem; margin: 0.75rem 0; font-size: 0.85rem; }
+    .notes-box summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+    .notes-box ul { margin: 0.5rem 0 0 1rem; padding: 0; }
   </style>
 </head>
 <body>
+  <div class="test-banner">
+    <strong>🧪 TEST ORTAMI</strong> — Bu panel test ve kurulum için kullanılır. Canlı sistemde aynı ayarlar API veya yönetim paneli üzerinden yapılmalıdır.
+  </div>
+
   <h1>PMS Gateway – İstemci Paneli</h1>
+
+  <details class="notes-box">
+    <summary>Önemli notlar & Ne yapacağım?</summary>
+    <ul>
+      <li><strong>Ne yapacağım?</strong> Önce "Kiracı & Provider" bölümünde Tenant ID ve PMS türünü (MySQL/MSSQL/PostgreSQL/API) seç. Sonra ilgili veritabanı veya API bilgilerini doldur. "Ayarları kaydet" ile gönder. "Bağlantıyı test et" ile PMS’e erişimi doğrula. "Test verify" ile oda + identity ile doğrulama simüle et.</li>
+      <li><strong>Kayıt nereye gidiyor?</strong> Ayarlar şu an sunucunun belleğinde tutuluyor. PM2 veya uygulama yeniden başlayınca silinir. Kalıcı kayıt için ileride veritabanı eklenebilir.</li>
+      <li><strong>Fail Mode:</strong> PMS’e ulaşılamadığında (ağ hatası, circuit açık) ne olsun? <em>deny</em> = giriş reddedilir, <em>bypass</em> = girişe izin verilir.</li>
+      <li><strong>Unknown Mode:</strong> PMS “unknown” status döndürürse: <em>deny</em> = red, <em>short_session</em> = kabul + kısa oturum süresi.</li>
+      <li><strong>Adres:</strong> Panel ve API’ye <code>http://</code> ile bağlan (SSL kapalı test ortamında). <code>https://</code> kullanma.</li>
+    </ul>
+  </details>
+
   <div class="tabs">
     <a href="#" class="tab-link active" data-tab="settings">PMS Ayarları</a>
     <a href="#" class="tab-link" data-tab="dashboard">PMS Dashboard</a>
@@ -45,6 +67,7 @@
   <div id="settings" class="tab active">
     <div class="card">
       <h2>Kiracı & Provider</h2>
+      <p class="help-text">Her otel/şube için bir Tenant ID kullanın. Provider: PMS’in türü (Yok / API / MySQL / MSSQL / PostgreSQL). Fail Mode ve Unknown Mode ile hata durumunda davranışı belirleyin.</p>
       <div class="row">
         <div>
           <label>Tenant ID</label>
@@ -83,6 +106,7 @@
 
     <div class="card" id="sqlMapping">
       <h2>SQL eşleme (MySQL / MSSQL / PostgreSQL)</h2>
+      <p class="help-text">Provider MySQL, MSSQL veya PostgreSQL ise bu alanları doldurun. Tablo ve sütun adları PMS veritabanınızdaki gerçek isimlerle eşleşmeli (örn. room_number, checkout_at). docs/OTEL_PMS_ENTEGRASYON.md içinde örnek config’ler var.</p>
       <div class="row">
         <div><label>DB Host</label><input type="text" id="pms_db_host" placeholder="localhost" /></div>
         <div><label>Port</label><input type="number" id="pms_db_port" placeholder="3306" /></div>
@@ -108,6 +132,7 @@
 
     <div class="card" id="apiMapping">
       <h2>API (REST)</h2>
+      <p class="help-text">Provider “API (REST)” ise PMS’in verify endpoint’inin tam URL’sini ve gerekirse API Key’i girin.</p>
       <div class="row">
         <div><label>API URL</label><input type="url" id="pms_api_url" placeholder="https://pms.example.com/api" /></div>
         <div><label>API Key</label><input type="text" id="pms_api_key" placeholder="opsiyonel" /></div>
@@ -116,6 +141,7 @@
 
     <div class="card">
       <h2>Kaydet & Test</h2>
+      <p class="help-text">Önce “Ayarları kaydet” ile formu sunucuya gönderin. “Bağlantıyı test et” ile seçili provider’a (DB veya API) gerçekten ulaşılıp ulaşılamadığını kontrol edin; sonuç aşağıda görünür.</p>
       <button id="btnSave">Ayarları kaydet</button>
       <button id="btnTest" class="secondary">Bağlantıyı test et</button>
       <pre id="testResult"></pre>
@@ -123,6 +149,7 @@
 
     <div class="card">
       <h2>Doğrulama testi</h2>
+      <p class="help-text">Oda numarası ve identity hash ile misafir doğrulamasını simüle eder. Ayarlar kayıtlı ve provider erişilebilir olmalı. Sonuç aşağıda (matched, status, ok, latency vb.) görünür.</p>
       <div class="row">
         <div><label>Oda no</label><input type="text" id="testRoom" placeholder="101" /></div>
         <div><label>Identity hash</label><input type="text" id="testIdentityHash" placeholder="hash123" /></div>
@@ -135,10 +162,12 @@
   <div id="dashboard" class="tab">
     <div class="card">
       <h2>Üst kartlar</h2>
+      <p class="help-text">Provider durumu, circuit breaker, cache hit oranı ve son 24 saatteki doğrulama sayısı. Tenant ID yukarıda seçili olanla aynı.</p>
       <div class="dashboard-cards" id="dashboardCards"></div>
     </div>
     <div class="card">
       <h2>Son 50 doğrulama</h2>
+      <p class="help-text">Bu tenant için son 50 doğrulama kaydı (oda, status, provider, cache, gecikme). Test verify veya login çağrıları burada listelenir.</p>
       <table>
         <thead><tr><th>Oda</th><th>Status</th><th>Provider</th><th>Cache</th><th>Latency</th><th>Tarih</th></tr></thead>
         <tbody id="verificationTable"></tbody>
@@ -146,6 +175,7 @@
     </div>
     <div class="card">
       <h2>Checkout job</h2>
+      <p class="help-text">10 dakikada bir çalışan job: checkout olan kullanıcıları tespit eder, RADIUS/MikroTik ile oturumu kapatır. Son çalışma zamanı ve kapatılan sayı burada görünür.</p>
       <p id="jobStatus"></p>
     </div>
   </div>
