@@ -6,10 +6,18 @@ import pmsRoutes from './routes/pms';
 import { startCheckoutJob } from './jobs/checkout-automation';
 
 const app = express();
-app.use(helmet());
+// SSL kapalı, yerel kullanım: CSP/COOP yumuşatıldı (panel inline script çalışsın)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+  })
+);
 app.use(cors());
 app.use(express.json());
 
+app.get('/favicon.ico', (_req, res) => res.status(204).end());
 app.use('/api/pms', pmsRoutes);
 app.use('/panel', express.static(path.join(__dirname, '..', 'public')));
 app.get('/panel', (_req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'index.html')));
